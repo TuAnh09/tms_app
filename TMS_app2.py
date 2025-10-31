@@ -238,7 +238,7 @@ elif page == "Theo Dõi Hàng Hóa":
         st.warning("Không có đơn hàng để theo dõi.")
     else:
         selected_order = st.selectbox("Chọn Mã Đơn", st.session_state['orders']["Mã Đơn"].tolist())
-        row = st.session_state['orders'][st.session_state['orders']["Mã Đơn'] == selected_order].iloc[0]
+        row = st.session_state['orders'][st.session_state['orders']["Mã Đơn"] == selected_order].iloc[0]
         st.subheader(f"Trạng Thái: {row['Trạng Thái']}")
         st.write("**Chi tiết đơn**")
         st.write(f"- Điểm Lấy: {row['Điểm Lấy']}")
@@ -293,3 +293,4 @@ elif page == "Báo Cáo":
     # Xuất báo cáo CSV
     csv = orders_df.to_csv(index=False).encode('utf-8')
     st.download_button("Tải báo cáo (CSV)", data=csv, file_name="orders_report.csv", mime="text/csv")
+
