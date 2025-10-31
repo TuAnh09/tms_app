@@ -1,30 +1,33 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pydeck as pdk
+import folium
+from streamlit_folium import st_folium
 
-# Khởi tạo dữ liệu nếu chưa có
+st.set_page_config(page_title="TMS Demo App", layout="wide")
+
+# --- Khởi tạo dữ liệu nếu chưa có ---
 if "orders" not in st.session_state:
     st.session_state["orders"] = pd.DataFrame({
         "Mã Đơn": ["DH001", "DH002", "DH003"],
         "Điểm Lấy": ["Hà Nội", "TP.HCM", "Đà Nẵng"],
         "Điểm Giao": ["TP.HCM", "Hà Nội", "Nha Trang"],
+        "Pickup_Lat": [21.0285, 10.7769, 16.0471],
+        "Pickup_Lon": [105.8542, 106.7009, 108.2068],
+        "Dropoff_Lat": [10.7769, 21.0285, 12.2388],
+        "Dropoff_Lon": [106.7009, 105.8542, 109.1967],
         "Trạng Thái": ["Pending", "In Transit", "Delivered"],
         "Thời Gian Dự Kiến": ["2025-11-01", "2025-11-02", "2025-11-03"],
-        "Chi Phí": [500000, 700000, 400000],
-        "pickup_Lon": [105.84, 106.70, 108.22],
-        "pickup_Lat": [21.02, 10.77, 16.07],
-        "dropoff_Lon": [106.70, 105.84, 109.19],
-        "dropoff_Lat": [10.77, 21.02, 12.25]
+        "Chi Phí": [500000, 700000, 400000]
     })
 
 orders_data = st.session_state["orders"]
 
-# Sidebar
+# --- Sidebar ---
 st.sidebar.title("Menu")
 page = st.sidebar.radio("Chọn trang", ["Dashboard", "Quản Lý Đơn Hàng", "Lập Kế Hoạch Tuyến Đường", "Theo Dõi Hàng Hóa", "Báo Cáo"])
 
-# Dashboard
+# --- Dashboard ---
 if page == "Dashboard":
     st.header("Tổng Quan")
 
@@ -41,7 +44,7 @@ if page == "Dashboard":
     st.subheader("Đơn Hàng Gần Nhất")
     st.dataframe(orders_data)
 
-# Quản Lý Đơn Hàng
+# --- Quản Lý Đơn Hàng ---
 elif page == "Quản Lý Đơn Hàng":
     st.header("Quản Lý Đơn Hàng")
 
@@ -53,99 +56,65 @@ elif page == "Quản Lý Đơn Hàng":
         ma_don = st.text_input("Mã Đơn")
         diem_lay = st.text_input("Điểm Lấy Hàng")
         diem_giao = st.text_input("Điểm Giao Hàng")
+        pickup_lat = st.text_input("Pickup_Lat (Vĩ độ)")
+        pickup_lon = st.text_input("Pickup_Lon (Kinh độ)")
+        drop_lat = st.text_input("Dropoff_Lat (Vĩ độ)")
+        drop_lon = st.text_input("Dropoff_Lon (Kinh độ)")
         loai_hang = st.selectbox("Loại Hàng Hóa", ["Thường", "Dễ Vỡ", "Nguy Hiểm"])
         thoi_gian = st.date_input("Thời Gian Dự Kiến")
         chi_phi = st.number_input("Chi Phí (VND)", value=0)
-        pickup_Lon = st.number_input("Kinh độ Điểm Lấy", value=0.0)
-        pickup_Lat = st.number_input("Vĩ độ Điểm Lấy", value=0.0)
-        dropoff_Lon = st.number_input("Kinh độ Điểm Giao", value=0.0)
-        dropoff_Lat = st.number_input("Vĩ độ Điểm Giao", value=0.0)
-        trang_thai = st.selectbox("Trạng Thái", ["Pending", "In Transit", "Delivered"])
         submit = st.form_submit_button("Tạo Đơn")
 
         if submit:
-            new_order = pd.DataFrame([{
-                "Mã Đơn": ma_don,
-                "Điểm Lấy": diem_lay,
-                "Điểm Giao": diem_giao,
-                "Trạng Thái": trang_thai,
-                "Thời Gian Dự Kiến": thoi_gian.strftime("%Y-%m-%d"),
-                "Chi Phí": chi_phi,
-                "pickup_Lon": pickup_Lon,
-                "pickup_Lat": pickup_Lat,
-                "dropoff_Lon": dropoff_Lon,
-                "dropoff_Lat": dropoff_Lat
-            }])
-            st.session_state["orders"] = pd.concat([orders_data, new_order], ignore_index=True)
-            st.success("Đơn hàng đã được tạo!")
+            try:
+                new_order = pd.DataFrame([{
+                    "Mã Đơn": ma_don,
+                    "Điểm Lấy": diem_lay,
+                    "Điểm Giao": diem_giao,
+                    "Pickup_Lat": float(pickup_lat),
+                    "Pickup_Lon": float(pickup_lon),
+                    "Dropoff_Lat": float(drop_lat),
+                    "Dropoff_Lon": float(drop_lon),
+                    "Trạng Thái": "Pending",
+                    "Thời Gian Dự Kiến": thoi_gian.strftime("%Y-%m-%d"),
+                    "Chi Phí": chi_phi
+                }])
+                st.session_state["orders"] = pd.concat([orders_data, new_order], ignore_index=True)
+                st.success("✅ Đơn hàng đã được tạo thành công!")
+            except ValueError:
+                st.error("❌ Vui lòng nhập đúng định dạng số cho tọa độ (Lat, Lon)!")
 
-# Lập Kế Hoạch Tuyến Đường
+# --- Lập Kế Hoạch Tuyến Đường ---
 elif page == "Lập Kế Hoạch Tuyến Đường":
     st.header("Lập Kế Hoạch Tuyến Đường")
 
     selected_order = st.selectbox("Chọn Mã Đơn", orders_data["Mã Đơn"])
     order_info = orders_data[orders_data["Mã Đơn"] == selected_order].iloc[0]
 
-    required_columns = ["pickup_Lat", "pickup_Lon", "dropoff_Lat", "dropoff_Lon"]
-    missing_columns = [col for col in required_columns if col not in order_info or pd.isna(order_info[col])]
+    diem_lay = order_info["Điểm Lấy"]
+    diem_giao = order_info["Điểm Giao"]
+    pickup_lat = order_info["Pickup_Lat"]
+    pickup_lon = order_info["Pickup_Lon"]
+    drop_lat = order_info["Dropoff_Lat"]
+    drop_lon = order_info["Dropoff_Lon"]
 
-    if missing_columns:
-        st.error(f"Đơn hàng này thiếu thông tin: {', '.join(missing_columns)}. Vui lòng cập nhật lại trong trang Quản Lý Đơn Hàng.")
-    else:
-        pickup_lat = order_info["pickup_Lat"]
-        pickup_lon = order_info["pickup_Lon"]
-        dropoff_lat = order_info["dropoff_Lat"]
-        dropoff_lon = order_info["dropoff_Lon"]
+    st.write(f"📦 **Điểm Lấy:** {diem_lay} ({pickup_lat}, {pickup_lon})")
+    st.write(f"🚚 **Điểm Giao:** {diem_giao} ({drop_lat}, {drop_lon})")
 
-        diem_lay = order_info["Điểm Lấy"]
-        diem_giao = order_info["Điểm Giao"]
+    if st.button("Hiển Thị Tuyến Đường"):
+        # Tạo bản đồ
+        m = folium.Map(location=[(pickup_lat + drop_lat) / 2, (pickup_lon + drop_lon) / 2], zoom_start=6)
 
-        st.write(f"📍 Điểm Lấy: {diem_lay} ({pickup_lat}, {pickup_lon})")
-        st.write(f"📦 Điểm Giao: {diem_giao} ({dropoff_lat}, {dropoff_lon})")
+        # Marker hai điểm
+        folium.Marker([pickup_lat, pickup_lon], tooltip="Điểm Lấy Hàng", icon=folium.Icon(color="green")).add_to(m)
+        folium.Marker([drop_lat, drop_lon], tooltip="Điểm Giao Hàng", icon=folium.Icon(color="red")).add_to(m)
 
-        if st.button("Tính Tuyến Đường"):
-            st.info(f"Tuyến đường từ {diem_lay} đến {diem_giao}: Khoảng cách 500km, Thời gian 8 giờ, Chi phí 1.000.000 VND")
+        # Vẽ đường nối
+        folium.PolyLine([(pickup_lat, pickup_lon), (drop_lat, drop_lon)], color="blue", weight=4, opacity=0.7).add_to(m)
 
-        st.subheader("🗺️ Bản Đồ Tuyến Đường")
-        route_data = pd.DataFrame([
-            {"lat": pickup_lat, "lon": pickup_lon},
-            {"lat": dropoff_lat, "lon": dropoff_lon}
-        ])
+        st_folium(m, width=800, height=500)
 
-        st.pydeck_chart(pdk.Deck(
-            initial_view_state=pdk.ViewState(
-                latitude=(pickup_lat + dropoff_lat) / 2,
-                longitude=(pickup_lon + dropoff_lon) / 2,
-                zoom=5,
-                pitch=0,
-            ),
-            layers=[
-                pdk.Layer(
-                    "ScatterplotLayer",
-                    data=route_data,
-                    get_position='[lon, lat]',
-                    get_color='[200, 30, 0, 160]',
-                    get_radius=50000,
-                ),
-                pdk.Layer(
-                    "LineLayer",
-                    data=pd.DataFrame([{
-                        "source_lon": pickup_lon,
-                        "source_lat": pickup_lat,
-                        "target_lon": dropoff_lon,
-                        "target_lat": dropoff_lat
-                    }]),
-                    get_source_position='[source_lon, source_lat]',
-                    get_target_position='[target_lon, target_lat]',
-                    get_color='[0, 0, 255]',
-                    auto_highlight=True,
-                    width_scale=2,
-                    width_min_pixels=2,
-                )
-            ]
-        ))
-
-# Theo Dõi Hàng Hóa
+# --- Theo Dõi Hàng Hóa ---
 elif page == "Theo Dõi Hàng Hóa":
     st.header("Theo Dõi Hàng Hóa")
 
@@ -158,11 +127,11 @@ elif page == "Theo Dõi Hàng Hóa":
     st.write("- Picked Up: 2025-10-31")
     st.write("- In Transit: Đang di chuyển")
 
-    st.subheader("Vị Trí Hiện Tại")
-    current_location = orders_data[orders_data["Mã Đơn"] == selected_order][["pickup_Lat", "pickup_Lon"]]
-    st.map(current_location.rename(columns={"pickup_Lat": "lat", "pickup_Lon": "lon"}))
+    order_info = orders_data[orders_data["Mã Đơn"] == selected_order].iloc[0]
+    map_data = pd.DataFrame([[order_info["Pickup_Lat"], order_info["Pickup_Lon"]]], columns=["lat", "lon"])
+    st.map(map_data)
 
-# Báo Cáo
+# --- Báo Cáo ---
 elif page == "Báo Cáo":
     st.header("Báo Cáo")
 
@@ -171,6 +140,4 @@ elif page == "Báo Cáo":
     chart_data = orders_data["Chi Phí"]
     st.line_chart(chart_data)
 
-    if st.button("Xuất Báo Cáo"):
-        st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
-
+    st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
