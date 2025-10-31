@@ -86,52 +86,64 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
     selected_order = st.selectbox("Chọn Mã Đơn", orders_data["Mã Đơn"])
     order_info = orders_data[orders_data["Mã Đơn"] == selected_order].iloc[0]
 
-    diem_lay = order_info["Điểm Lấy"]
-    diem_giao = order_info["Điểm Giao"]
-    pickup_lat = order_info["pickup_Lat"]
-    pickup_lon = order_info["pickup_Lon"]
-    dropoff_lat = order_info["dropoff_Lat"]
-    dropoff_lon = order_info["dropoff_Lon"]
+    required_columns = ["pickup_Lat", "pickup_Lon", "dropoff_Lat", "dropoff_Lon"]
+    missing_columns = [col for col in required_columns if col not in order_info or pd.isna(order_info[col])]
 
-    st.write(f"Điểm Lấy: {diem_lay} ({pickup_lat}, {pickup_lon})")
-    st.write(f"Điểm Giao: {diem_giao} ({dropoff_lat}, {dropoff_lon})")
+    if missing_columns:
+        st.error(f"Đơn hàng này thiếu thông tin: {', '.join(missing_columns)}. Vui lòng cập nhật lại trong trang Quản Lý Đơn Hàng.")
+    else:
+        pickup_lat = order_info["pickup_Lat"]
+        pickup_lon = order_info["pickup_Lon"]
+        dropoff_lat = order_info["dropoff_Lat"]
+        dropoff_lon = order_info["dropoff_Lon"]
 
-    if st.button("Tính Tuyến Đường"):
-        st.info(f"Tuyến đường từ {diem_lay} đến {diem_giao}: Khoảng cách 500km, Thời gian 8 giờ, Chi phí 1.000.000 VND")
+        diem_lay = order_info["Điểm Lấy"]
+        diem_giao = order_info["Điểm Giao"]
 
-    st.subheader("Bản Đồ Tuyến Đường")
-    route_data = pd.DataFrame([
-        {"lat": pickup_lat, "lon": pickup_lon},
-        {"lat": dropoff_lat, "lon": dropoff_lon}
-    ])
+        st.write(f"📍 Điểm Lấy: {diem_lay} ({pickup_lat}, {pickup_lon})")
+        st.write(f"📦 Điểm Giao: {diem_giao} ({dropoff_lat}, {dropoff_lon})")
 
-    st.pydeck_chart(pdk.Deck(
-        initial_view_state=pdk.ViewState(
-            latitude=(pickup_lat + dropoff_lat) / 2,
-            longitude=(pickup_lon + dropoff_lon) / 2,
-            zoom=5,
-            pitch=0,
-        ),
-        layers=[
-            pdk.Layer(
-                "ScatterplotLayer",
-                data=route_data,
-                get_position='[lon, lat]',
-                get_color='[200, 30, 0, 160]',
-                get_radius=50000,
+        if st.button("Tính Tuyến Đường"):
+            st.info(f"Tuyến đường từ {diem_lay} đến {diem_giao}: Khoảng cách 500km, Thời gian 8 giờ, Chi phí 1.000.000 VND")
+
+        st.subheader("🗺️ Bản Đồ Tuyến Đường")
+        route_data = pd.DataFrame([
+            {"lat": pickup_lat, "lon": pickup_lon},
+            {"lat": dropoff_lat, "lon": dropoff_lon}
+        ])
+
+        st.pydeck_chart(pdk.Deck(
+            initial_view_state=pdk.ViewState(
+                latitude=(pickup_lat + dropoff_lat) / 2,
+                longitude=(pickup_lon + dropoff_lon) / 2,
+                zoom=5,
+                pitch=0,
             ),
-            pdk.Layer(
-                "LineLayer",
-                data=route_data,
-                get_source_position='[lon, lat]',
-                get_target_position='[lon, lat]',
-                get_color='[0, 0, 255]',
-                auto_highlight=True,
-                width_scale=2,
-                width_min_pixels=2,
-            )
-        ]
-    ))
+            layers=[
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=route_data,
+                    get_position='[lon, lat]',
+                    get_color='[200, 30, 0, 160]',
+                    get_radius=50000,
+                ),
+                pdk.Layer(
+                    "LineLayer",
+                    data=pd.DataFrame([{
+                        "source_lon": pickup_lon,
+                        "source_lat": pickup_lat,
+                        "target_lon": dropoff_lon,
+                        "target_lat": dropoff_lat
+                    }]),
+                    get_source_position='[source_lon, source_lat]',
+                    get_target_position='[target_lon, target_lat]',
+                    get_color='[0, 0, 255]',
+                    auto_highlight=True,
+                    width_scale=2,
+                    width_min_pixels=2,
+                )
+            ]
+        ))
 
 # Theo Dõi Hàng Hóa
 elif page == "Theo Dõi Hàng Hóa":
@@ -161,3 +173,4 @@ elif page == "Báo Cáo":
 
     if st.button("Xuất Báo Cáo"):
         st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
+
