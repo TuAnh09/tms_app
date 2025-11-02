@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import folium
 from streamlit_folium import st_folium
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="TMS Demo App", layout="wide")
 
@@ -93,17 +94,27 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
 
     diem_lay = order_info["Điểm Lấy"]
     diem_giao = order_info["Điểm Giao"]
-    pickup_lat = order_info["Pickup_Lat"]
-    pickup_lon = order_info["Pickup_Lon"]
-    drop_lat = order_info["Dropoff_Lat"]
-    drop_lon = order_info["Dropoff_Lon"]
+
+    # Ép kiểu float và kiểm tra NaN
+    try:
+        pickup_lat = float(order_info["Pickup_Lat"])
+        pickup_lon = float(order_info["Pickup_Lon"])
+        drop_lat = float(order_info["Dropoff_Lat"])
+        drop_lon = float(order_info["Dropoff_Lon"])
+    except Exception as e:
+        st.error("Không thể đọc tọa độ từ dữ liệu đơn hàng. Vui lòng kiểm tra giá trị Pickup/Dropoff Lat/Lon.")
+        st.stop()
 
     st.write(f"📦 **Điểm Lấy:** {diem_lay} ({pickup_lat}, {pickup_lon})")
     st.write(f"🚚 **Điểm Giao:** {diem_giao} ({drop_lat}, {drop_lon})")
 
     if st.button("Hiển Thị Tuyến Đường"):
-        # Tạo bản đồ trung tâm giữa 2 điểm
-        m = folium.Map(location=[(pickup_lat + drop_lat) / 2, (pickup_lon + drop_lon) / 2], zoom_start=6)
+        # Tọa độ trung tâm map (giữa 2 điểm)
+        center_lat = (pickup_lat + drop_lat) / 2
+        center_lon = (pickup_lon + drop_lon) / 2
+
+        # Tạo map folium
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=6)
 
         # Marker cho hai điểm (chỉ hiển thị, không nối)
         folium.Marker(
@@ -120,9 +131,19 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
             icon=folium.Icon(color="red")
         ).add_to(m)
 
-        # ❌ Không vẽ PolyLine nối hai điểm nữa
-
-        st_folium(m, width=800, height=500)
+        # --- Thử render bằng st_folium; nếu không hiện, fallback sang components.html ---
+        rendered = None
+        try:
+            # Một số phiên bản st_folium yêu cầu args khác; nhưng thử call cơ bản trước
+            rendered = st_folium(m, width=800, height=500)
+        except Exception as e:
+            st.warning("st_folium gặp lỗi khi render; thử fallback bằng components.html.")
+            try:
+                html = m.get_root().render()
+                components.html(html, height=500, scrolling=True)
+            except Exception as e2:
+                st.error("Không thể render bản đồ bằng cả st_folium và components.html. Kiểm tra lại cài đặt thư viện (folium, streamlit_folium).")
+                st.exception(e2)
 
 # --- Theo Dõi Hàng Hóa ---
 elif page == "Theo Dõi Hàng Hóa":
