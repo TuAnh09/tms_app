@@ -94,50 +94,51 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
 
     diem_lay = order_info["Điểm Lấy"]
     diem_giao = order_info["Điểm Giao"]
-    pickup_lat = order_info["Pickup_Lat"]
-    pickup_lon = order_info["Pickup_Lon"]
-    drop_lat = order_info["Dropoff_Lat"]
-    drop_lon = order_info["Dropoff_Lon"]
+    pickup_lat = float(order_info["Pickup_Lat"])
+    pickup_lon = float(order_info["Pickup_Lon"])
+    drop_lat = float(order_info["Dropoff_Lat"])
+    drop_lon = float(order_info["Dropoff_Lon"])
 
     st.markdown(f"📦 **Điểm Lấy:** {diem_lay} ({pickup_lat}, {pickup_lon})")
     st.markdown(f"🚚 **Điểm Giao:** {diem_giao} ({drop_lat}, {drop_lon})")
 
-    # Khi bấm nút, tạo bản đồ
     if st.button("Hiển Thị Tuyến Đường"):
         try:
-            # Tạo bản đồ trung tâm giữa 2 điểm
+            # Tính trung tâm bản đồ
             center_lat = (pickup_lat + drop_lat) / 2
             center_lon = (pickup_lon + drop_lon) / 2
+
+            # Tạo bản đồ
             m = folium.Map(location=[center_lat, center_lon], zoom_start=6)
 
             # Marker điểm lấy
             folium.Marker(
                 location=[pickup_lat, pickup_lon],
-                tooltip=f"Điểm Lấy: {diem_lay}",
-                popup=f"{diem_lay}<br>Lat: {pickup_lat}<br>Lon: {pickup_lon}",
+                popup=f"Điểm Lấy: {diem_lay}",
+                tooltip="Điểm Lấy",
                 icon=folium.Icon(color="green", icon="truck", prefix="fa")
             ).add_to(m)
 
             # Marker điểm giao
             folium.Marker(
                 location=[drop_lat, drop_lon],
-                tooltip=f"Điểm Giao: {diem_giao}",
-                popup=f"{diem_giao}<br>Lat: {drop_lat}<br>Lon: {drop_lon}",
+                popup=f"Điểm Giao: {diem_giao}",
+                tooltip="Điểm Giao",
                 icon=folium.Icon(color="red", icon="flag", prefix="fa")
             ).add_to(m)
 
-            # Vẽ đường nối giữa điểm lấy và điểm giao
+            # Vẽ tuyến đường
             folium.PolyLine(
                 locations=[[pickup_lat, pickup_lon], [drop_lat, drop_lon]],
                 color="blue",
-                weight=3,
-                opacity=0.7
+                weight=4,
+                opacity=0.8
             ).add_to(m)
 
-            # Hiển thị bản đồ trong Streamlit
+            # Hiển thị bản đồ
             st_folium(m, width=800, height=500)
         except Exception as e:
-            st.error(f"Lỗi khi tạo bản đồ: {e}")
+            st.error(f"Lỗi khi hiển thị bản đồ: {e}")
 
 
 # --- Theo Dõi Hàng Hóa ---
@@ -166,5 +167,6 @@ elif page == "Báo Cáo":
     st.line_chart(chart_data)
 
     st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
+
 
 
