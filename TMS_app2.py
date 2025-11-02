@@ -102,44 +102,41 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
     st.markdown(f"📦 **Điểm Lấy:** {diem_lay} ({pickup_lat}, {pickup_lon})")
     st.markdown(f"🚚 **Điểm Giao:** {diem_giao} ({drop_lat}, {drop_lon})")
 
+    # --- Cập nhật đoạn hiển thị bản đồ an toàn ---
+    if "show_map" not in st.session_state:
+        st.session_state["show_map"] = False
+
     if st.button("Hiển Thị Tuyến Đường"):
+        st.session_state["show_map"] = True
+
+    if st.session_state["show_map"]:
         try:
-            # Tính trung tâm bản đồ
             center_lat = (pickup_lat + drop_lat) / 2
             center_lon = (pickup_lon + drop_lon) / 2
-
-            # Tạo bản đồ
             m = folium.Map(location=[center_lat, center_lon], zoom_start=6)
 
-            # Marker điểm lấy
             folium.Marker(
-                location=[pickup_lat, pickup_lon],
+                [pickup_lat, pickup_lon],
                 popup=f"Điểm Lấy: {diem_lay}",
                 tooltip="Điểm Lấy",
                 icon=folium.Icon(color="green", icon="truck", prefix="fa")
             ).add_to(m)
 
-            # Marker điểm giao
             folium.Marker(
-                location=[drop_lat, drop_lon],
+                [drop_lat, drop_lon],
                 popup=f"Điểm Giao: {diem_giao}",
                 tooltip="Điểm Giao",
                 icon=folium.Icon(color="red", icon="flag", prefix="fa")
             ).add_to(m)
 
-            # Vẽ tuyến đường
             folium.PolyLine(
-                locations=[[pickup_lat, pickup_lon], [drop_lat, drop_lon]],
-                color="blue",
-                weight=4,
-                opacity=0.8
+                [[pickup_lat, pickup_lon], [drop_lat, drop_lon]],
+                color="blue", weight=4, opacity=0.8
             ).add_to(m)
 
-            # Hiển thị bản đồ
             st_folium(m, width=800, height=500)
         except Exception as e:
             st.error(f"Lỗi khi hiển thị bản đồ: {e}")
-
 
 # --- Theo Dõi Hàng Hóa ---
 elif page == "Theo Dõi Hàng Hóa":
@@ -167,6 +164,3 @@ elif page == "Báo Cáo":
     st.line_chart(chart_data)
 
     st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
-
-
-
