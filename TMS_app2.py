@@ -108,11 +108,11 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
             # Tạo bản đồ trung tâm giữa 2 điểm
             center_lat = (pickup_lat + drop_lat) / 2
             center_lon = (pickup_lon + drop_lon) / 2
-            m = folium.Map(location=[center_lat, center_lon], zoom_start=5, control_scale=True)
+            m = folium.Map(location=[center_lat, center_lon], zoom_start=6)
 
             # Marker điểm lấy
             folium.Marker(
-                [pickup_lat, pickup_lon],
+                location=[pickup_lat, pickup_lon],
                 tooltip=f"Điểm Lấy: {diem_lay}",
                 popup=f"{diem_lay}<br>Lat: {pickup_lat}<br>Lon: {pickup_lon}",
                 icon=folium.Icon(color="green", icon="truck", prefix="fa")
@@ -120,14 +120,22 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
 
             # Marker điểm giao
             folium.Marker(
-                [drop_lat, drop_lon],
+                location=[drop_lat, drop_lon],
                 tooltip=f"Điểm Giao: {diem_giao}",
                 popup=f"{diem_giao}<br>Lat: {drop_lat}<br>Lon: {drop_lon}",
                 icon=folium.Icon(color="red", icon="flag", prefix="fa")
             ).add_to(m)
 
+            # Vẽ đường nối giữa điểm lấy và điểm giao
+            folium.PolyLine(
+                locations=[[pickup_lat, pickup_lon], [drop_lat, drop_lon]],
+                color="blue",
+                weight=3,
+                opacity=0.7
+            ).add_to(m)
+
             # Hiển thị bản đồ trong Streamlit
-            st_data = st_folium(m, width=800, height=500)
+            st_folium(m, width=800, height=500)
         except Exception as e:
             st.error(f"Lỗi khi tạo bản đồ: {e}")
 
@@ -143,7 +151,6 @@ elif page == "Theo Dõi Hàng Hóa":
     st.write("Timeline:")
     st.write("- Created: 2025-10-30")
     st.write("- Picked Up: 2025-10-31")
-    st.write("- In Transit: Đang di chuyển")
 
     order_info = orders_data[orders_data["Mã Đơn"] == selected_order].iloc[0]
     map_data = pd.DataFrame([[order_info["Pickup_Lat"], order_info["Pickup_Lon"]]], columns=["lat", "lon"])
@@ -159,4 +166,5 @@ elif page == "Báo Cáo":
     st.line_chart(chart_data)
 
     st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
+
 
