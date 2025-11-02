@@ -102,15 +102,25 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
     st.write(f"🚚 **Điểm Giao:** {diem_giao} ({drop_lat}, {drop_lon})")
 
     if st.button("Hiển Thị Tuyến Đường"):
-        # Tạo bản đồ
+        # Tạo bản đồ trung tâm giữa 2 điểm
         m = folium.Map(location=[(pickup_lat + drop_lat) / 2, (pickup_lon + drop_lon) / 2], zoom_start=6)
 
-        # Marker hai điểm
-        folium.Marker([pickup_lat, pickup_lon], tooltip="Điểm Lấy Hàng", icon=folium.Icon(color="green")).add_to(m)
-        folium.Marker([drop_lat, drop_lon], tooltip="Điểm Giao Hàng", icon=folium.Icon(color="red")).add_to(m)
+        # Marker cho hai điểm (chỉ hiển thị, không nối)
+        folium.Marker(
+            [pickup_lat, pickup_lon],
+            tooltip=f"Điểm Lấy Hàng: {diem_lay}",
+            popup=f"Tọa độ: ({pickup_lat}, {pickup_lon})",
+            icon=folium.Icon(color="green")
+        ).add_to(m)
 
-        # Vẽ đường nối
-        folium.PolyLine([(pickup_lat, pickup_lon), (drop_lat, drop_lon)], color="blue", weight=4, opacity=0.7).add_to(m)
+        folium.Marker(
+            [drop_lat, drop_lon],
+            tooltip=f"Điểm Giao Hàng: {diem_giao}",
+            popup=f"Tọa độ: ({drop_lat}, {drop_lon})",
+            icon=folium.Icon(color="red")
+        ).add_to(m)
+
+        # ❌ Không vẽ PolyLine nối hai điểm nữa
 
         st_folium(m, width=800, height=500)
 
