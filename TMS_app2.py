@@ -163,4 +163,13 @@ elif page == "Báo Cáo":
     chart_data = orders_data["Chi Phí"]
     st.line_chart(chart_data)
 
-    st.download_button("Tải PDF", data="Nội dung báo cáo giả", file_name="report.pdf")
+    # --- Xuất file CSV ---
+    csv_data = orders_data.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Tải Dữ Liệu CSV",
+        data=csv_data,
+        file_name="bao_cao_don_hang.csv",
+        mime="text/csv"
+    )
+
+
