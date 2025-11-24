@@ -211,6 +211,17 @@ elif page == "Lập Kế Hoạch Tuyến Đường":
         col2.metric("Quãng đường - Sau (km)", f"{optimized_distance:.2f}", delta=f"{savings_km:.2f} km")
         col3.metric("Tỷ lệ tiết kiệm", f"{savings_pct:.2f} %", delta=f"{int(savings_vnd):,} VND")
         st.write("Feasibility kiểm tra tải trọng đơn giản:", "✅ OK" if capacity_ok else "❌ Vượt tải xe (cần phân chia nhiều xe)")
+        # Tính chi phí trước và sau tối ưu
+        cost_original = original_distance * cost_per_km
+        cost_optimized = optimized_distance * cost_per_km
+        savings_vnd = cost_original - cost_optimized
+
+        # Hiển thị chi phí
+        st.subheader("Chi phí dự kiến")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Chi phí - Trước (VND)", f"{int(cost_original):,}")
+        col2.metric("Chi phí - Sau (VND)", f"{int(cost_optimized):,}", delta=f"{int(savings_vnd):,}")
+        col3.metric("Tiết kiệm (%)", f"{savings_pct:.2f} %")
 
         # Map
         center_lat = np.mean([p[0] for p in points])
@@ -267,3 +278,4 @@ elif page == "Báo Cáo / Xuất":
     st.subheader("Thống kê nhanh")
     st.write(f"- Tổng số đơn: {len(df)}")
     st.write(f"- Tổng khối lượng (tấn): {df['Khối Lượng'].sum():.2f}")
+
