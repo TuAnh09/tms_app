@@ -118,30 +118,56 @@ if page == "Dashboard":
 elif page == "Quản Lý Đơn Hàng":
     st.header("Quản Lý Đơn Hàng")
     df = st.session_state["orders"]
+
+    # Đổi tên cột tiếng Việt
+    df_display = df.rename(columns={
+        "Mã Đơn": "Mã đơn",
+        "Điểm Lấy": "Điểm lấy",
+        "Điểm Giao": "Điểm giao",
+        "Lat": "Vĩ độ",
+        "Lon": "Kinh độ",
+        "Demand": "Khối lượng",
+        "Trạng Thái": "Trạng thái",
+        "Thời Gian": "Ngày dự kiến"
+    })
+
+    # Loại bỏ cột Chi Phí khỏi bảng hiển thị
+    if "Chi Phí" in df_display.columns:
+        df_display = df_display.drop(columns=["Chi Phí"])
+
     st.subheader("Danh sách hiện tại")
-    st.dataframe(df)
+    st.dataframe(df_display)
 
     st.subheader("Tạo đơn hàng mới")
     with st.form("form_add"):
-        code = st.text_input("Mã Đơn", value=f"DH{len(df)+1:03d}")
-        pickup = st.text_input("Điểm Lấy (Ghi 'Kho Hà Nội' nếu là kho)", value="Kho Hà Nội")
-        dropoff = st.text_input("Điểm Giao", value="")
-        lat = st.text_input("Vĩ độ (lat)", value="")
-        lon = st.text_input("Kinh độ (lon)", value="")
+        code = st.text_input("Mã đơn", value=f"DH{len(df)+1:03d}")
+        pickup = st.text_input("Điểm lấy (ghi 'Kho Hà Nội' nếu là kho)", value="Kho Hà Nội")
+        dropoff = st.text_input("Điểm giao", value="")
+        lat = st.text_input("Vĩ độ", value="")
+        lon = st.text_input("Kinh độ", value="")
         demand = st.number_input("Khối lượng (tấn)", min_value=0.0, step=0.1, value=0.5)
-        cost = st.number_input("Chi Phí (VND)", min_value=0, step=1000, value=100000)
-        status = st.selectbox("Trạng Thái", ["Pending", "In Transit", "Delivered"])
-        date = st.date_input("Ngày Dự Kiến")
+        status = st.selectbox("Trạng thái", ["Pending", "In Transit", "Delivered"])
+        date = st.date_input("Ngày dự kiến")
         submit = st.form_submit_button("Thêm đơn")
+
         if submit:
             try:
-                new = {"Mã Đơn": code, "Điểm Lấy": pickup, "Điểm Giao": dropoff,
-                       "Lat": float(lat), "Lon": float(lon), "Demand": float(demand),
-                       "Trạng Thái": status, "Thời Gian": date.strftime("%Y-%m-%d"), "Chi Phí": int(cost)}
+                new = {
+                    "Mã Đơn": code,
+                    "Điểm Lấy": pickup,
+                    "Điểm Giao": dropoff,
+                    "Lat": float(lat),
+                    "Lon": float(lon),
+                    "Demand": float(demand),
+                    "Trạng Thái": status,
+                    "Thời Gian": date.strftime("%Y-%m-%d")
+                    # ĐÃ BỎ Chi Phí
+                }
                 st.session_state["orders"] = pd.concat([df, pd.DataFrame([new])], ignore_index=True)
                 st.success("Đã thêm đơn hàng.")
             except Exception as e:
                 st.error("Lỗi khi thêm đơn. Kiểm tra tọa độ. " + str(e))
+
 
 # ---------------------------
 # Lập kế hoạch tuyến đường (VRP demo)
@@ -321,3 +347,4 @@ elif page == "Báo Cáo / Xuất":
     st.write(f"- Tổng số đơn: {len(df)}")
     st.write(f"- Tổng khối lượng (tấn): {df['Demand'].sum():.2f}")
     st.write(f"- Tổng chi phí (VND): {df['Chi Phí'].sum():,}")
+
